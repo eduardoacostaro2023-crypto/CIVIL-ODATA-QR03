@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Civil — Actividades</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: rgba(0,0,0,0.1);
+  --border2: rgba(0,0,0,0.18);
+  --text: #1a1a18;
+  --text2: #5c5c58;
+  --text3: #9a9a94;
+  --blue: #378ADD; --blue-light: #E6F1FB; --blue-dark: #0C447C;
+  --amber: #EF9F27; --amber-light: #FAEEDA; --amber-dark: #633806;
+  --green: #1D9E75; --green-light: #E1F5EE; --green-dark: #085041;
+  --purple: #7F77DD; --purple-light: #EEEDFE; --purple-dark: #3C3489;
+  --red: #E24B4A; --red-light: #FCEBEB; --red-dark: #791F1F;
+  --radius: 10px; --radius-sm: 6px;
+}
+body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 36px; height: 36px; background: var(--text); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.logo-icon svg { width: 20px; height: 20px; fill: white; }
+.logo-text h1 { font-size: 16px; font-weight: 600; color: var(--text); }
+.logo-text p { font-size: 12px; color: var(--text3); }
+.header-date { font-size: 12px; color: var(--text3); background: var(--surface2); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); }
+main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+@media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, 1fr); } .charts-grid { grid-template-columns: 1fr !important; } header { padding: 12px 16px; } main { padding: 16px; } .controls { flex-direction: column; } }
+.metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
+.metric .m-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.metric .m-val { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
+.metric .m-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+.metric.accent { background: var(--text); }
+.metric.accent .m-label, .metric.accent .m-sub { color: rgba(255,255,255,0.55); }
+.metric.accent .m-val { color: white; }
+.alert-box { background: var(--amber-light); border: 1px solid var(--amber); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 24px; font-size: 13px; color: var(--amber-dark); }
+.alert-title { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.alert-items { display: flex; flex-direction: column; gap: 3px; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.section-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; }
+.btn-group { display: flex; gap: 4px; background: var(--surface2); padding: 3px; border-radius: 8px; }
+.btn-tab { font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 6px; cursor: pointer; background: transparent; border: none; color: var(--text2); transition: all 0.15s; font-family: inherit; }
+.btn-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.controls label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.controls select, .controls input { font-size: 13px; padding: 7px 12px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface); color: var(--text); font-family: inherit; outline: none; }
+.controls select:focus, .controls input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(55,138,221,0.12); }
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; overflow-x: auto; margin-bottom: 24px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--surface2); color: var(--text2); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; }
+th:hover { color: var(--text); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+.badge-hidro { background: var(--blue-light); color: var(--blue-dark); }
+.badge-herr { background: var(--amber-light); color: var(--amber-dark); }
+.badge-sello { background: var(--green-light); color: var(--green-dark); }
+.badge-noct { background: var(--purple-light); color: var(--purple-dark); }
+.badge-diur { background: var(--green-light); color: var(--green-dark); }
+.bar-cell { display: flex; align-items: center; gap: 8px; }
+.bar-bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; min-width: 50px; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.chart-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 11px; color: var(--text2); }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.legend-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.gantt-wrap { overflow-x: auto; padding-bottom: 4px; }
+.gantt-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; }
+.gantt-label { width: 170px; min-width: 170px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; padding-right: 10px; font-size: 11px; }
+.gantt-track { flex: 1; height: 22px; position: relative; background: var(--surface2); border-radius: 4px; min-width: 200px; }
+.gantt-bar { position: absolute; height: 100%; border-radius: 4px; display: flex; align-items: center; padding: 0 6px; font-size: 10px; font-weight: 600; color: white; overflow: hidden; white-space: nowrap; }
+.pivot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media (max-width: 700px) { .pivot-grid { grid-template-columns: 1fr; } }
+.pivot-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.pivot-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.pivot-row:last-child { border-bottom: none; }
+.pivot-key { color: var(--text2); }
+.pivot-val { font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.resumenes { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
+.res-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.res-row:last-child { border-bottom: none; }
+.res-name { color: var(--text2); font-size: 12px; }
+.res-date { font-weight: 600; color: var(--text); background: var(--surface2); padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+footer { text-align: center; font-size: 11px; color: var(--text3); padding: 24px; border-top: 1px solid var(--border); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22" fill="none" stroke="white" stroke-width="1.5"/></svg>
+    </div>
+    <div class="logo-text">
+      <h1>Dashboard Civil</h1>
+      <p>Control de actividades y duraciones</p>
+    </div>
+  </div>
+  <div class="header-date" id="headerDate"></div>
+</header>
+
+<main>
+  <div class="metrics" id="metrics"></div>
+  <div class="alert-box" id="alertBox" style="display:none"></div>
+
+  <div class="section-header">
+    <span class="section-label">Actividades</span>
+    <div class="btn-group">
+      <button class="btn-tab active" onclick="setView('tabla')">Tabla</button>
+      <button class="btn-tab" onclick="setView('gantt')">Gantt</button>
+      <button class="btn-tab" onclick="setView('pivot')">Resumen</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <label>Especialidad:</label>
+    <select id="filtroEsp" onchange="renderAll()">
+      <option value="">Todas</option>
+      <option>HIDROSANITARIO</option>
+      <option>HERRERIA</option>
+      <option>SELLO CORTAFUEGO</option>
+    </select>
+    <label>Horario:</label>
+    <select id="filtroHor" onchange="renderAll()">
+      <option value="">Todos</option>
+      <option>NOCTURNO</option>
+      <option>DIURNO</option>
+    </select>
+    <label>Buscar:</label>
+    <input type="text" id="buscar" placeholder="actividad, área, colo..." oninput="renderAll()" style="width:180px" />
+  </div>
+
+  <div id="viewTabla">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('colo',this)">COLO ↕</th>
+            <th onclick="sortBy('actividad',this)">Actividad ↕</th>
+            <th onclick="sortBy('area',this)">Área ↕</th>
+            <th onclick="sortBy('especialidad',this)">Especialidad ↕</th>
+            <th onclick="sortBy('personal',this)" style="text-align:center">Personal ↕</th>
+            <th onclick="sortBy('dias',this)">Duración ↕</th>
+            <th onclick="sortBy('inicio',this)">Inicio ↕</th>
+            <th onclick="sortBy('fin',this)">Fin ↕</th>
+            <th>Horario</th>
+            <th>Materiales</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="viewGantt" style="display:none">
+    <div class="chart-card">
+      <div class="chart-title">Diagrama de Gantt — línea de tiempo de actividades</div>
+      <div class="gantt-wrap"><div id="ganttContainer"></div></div>
+    </div>
+  </div>
+
+  <div id="viewPivot" style="display:none">
+    <div class="pivot-grid" id="pivotGrid"></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Personal por especialidad</div>
+      <div class="legend" id="legend1"></div>
+      <div style="position:relative;height:240px"><canvas id="c1"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Actividades por área</div>
+      <div class="legend" id="legend2"></div>
+      <div style="position:relative;height:240px"><canvas id="c2"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Duración de actividades (días)</div>
+      <div style="position:relative;height:260px"><canvas id="c3"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Distribución por horario</div>
+      <div class="legend" id="legend4"></div>
+      <div style="position:relative;height:240px"><canvas id="c4"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-header" style="margin-top:8px">
+    <span class="section-label">Fechas de término por resumen</span>
+  </div>
+  <div class="resumenes">
+    <div class="res-row"><span class="res-name">RESUMEN 2/4 — Sello e Hidro</span><span class="res-date">13/06/2026</span></div>
+    <div class="res-row"><span class="res-name">RESUMEN COLO 7/8 — Hidro, Sello y Herrerías</span><span class="res-date">13/06/2026</span></div>
+    <div class="res-row"><span class="res-name">RESUMEN COLO 11/12 — Hidro y Herrerías</span><span class="res-date">17/06/2026</span></div>
+    <div class="res-row"><span class="res-name">RESUMEN COLO 11/12 — Sello Cortafuego</span><span class="res-date">03/07/2026</span></div>
+  </div>
+</main>
+
+<footer>Dashboard Civil · Generado con Claude · Actualizado al 06/06/2026</footer>
+
+<script>
+const raw = [
+  {colo:'7', actividad:'SELLO CORTAFUEGO', area:'AZOTEA Y FACHADA', especialidad:'SELLO CORTAFUEGO', personal:6, dias:6, inicio:'2026-06-08', fin:'2026-06-13', horario:'NOCTURNO', material:'LAMINA HILTI 4 PZAS.'},
+  {colo:'8', actividad:'BAJADA PLUVIAL', area:'FACHADA', especialidad:'HIDROSANITARIO', personal:4, dias:2, inicio:'2026-06-08', fin:'2026-06-10', horario:'NOCTURNO', material:'-'},
+  {colo:'8', actividad:'PINTURA ESTRUCTURA', area:'GENERADORES', especialidad:'HERRERIA', personal:2, dias:2, inicio:'2026-06-08', fin:'2026-06-10', horario:'NOCTURNO', material:'-'},
+  {colo:'7', actividad:'PINTURA HERRERIAS', area:'AZOTEA', especialidad:'HERRERIA', personal:1, dias:1, inicio:'2026-06-08', fin:'2026-06-09', horario:'NOCTURNO', material:'-'},
+  {colo:'7 Y 8', actividad:'ETIQUETAS HIDRO', area:'DRENES GRAL.', especialidad:'HIDROSANITARIO', personal:2, dias:1, inicio:'2026-06-08', fin:'2026-06-09', horario:'NOCTURNO', material:'-'},
+  {colo:'12', actividad:'BAJADAS PLUVIALES', area:'GENERADORES', especialidad:'HIDROSANITARIO', personal:4, dias:9, inicio:'2026-06-10', fin:'2026-06-19', horario:'NOCTURNO', material:'-'},
+  {colo:'12', actividad:'SOLDADURA DE DIAGONALES', area:'GENERADORES', especialidad:'HERRERIA', personal:6, dias:3, inicio:'2026-06-08', fin:'2026-06-11', horario:'NOCTURNO', material:'-'},
+  {colo:'12', actividad:'PINTURA EN DIAGONALES Y GENERADORES', area:'GENERADORES', especialidad:'HERRERIA', personal:4, dias:4, inicio:'2026-06-10', fin:'2026-06-13', horario:'NOCTURNO', material:'-'},
+  {colo:'12', actividad:'DIESEL', area:'GENERADORES', especialidad:'HERRERIA', personal:4, dias:3, inicio:'2026-06-11', fin:'2026-06-13', horario:'-', material:'-'},
+  {colo:'11', actividad:'SOPORTERIAS MENORES', area:'AZOTEA', especialidad:'HERRERIA', personal:4, dias:6, inicio:'2026-06-08', fin:'2026-06-13', horario:'DIURNO', material:'-'},
+  {colo:'12', actividad:'SOPORTERIAS MENORES', area:'EXTERIOR', especialidad:'HERRERIA', personal:4, dias:6, inicio:'2026-06-08', fin:'2026-06-13', horario:'DIURNO', material:'-'},
+  {colo:'11 Y 12', actividad:'CONEXIÓN DE EQUIPOS', area:'INTERIOR', especialidad:'HIDROSANITARIO', personal:2, dias:3, inicio:'2026-06-08', fin:'2026-06-10', horario:'DIURNO', material:'-'},
+  {colo:'11', actividad:'INSTALACION HIDRAULICA (PPR)', area:'AZOTEA', especialidad:'HIDROSANITARIO', personal:6, dias:4, inicio:'2026-06-11', fin:'2026-06-17', horario:'NOCTURNO', material:'REQ. 09/06/26'},
+  {colo:'11', actividad:'INSTALACION DE PVC, AHUS', area:'AZOTEA', especialidad:'HIDROSANITARIO', personal:2, dias:4, inicio:'2026-06-11', fin:'2026-06-13', horario:'DIURNO', material:'REQ. 09/06/26'},
+  {colo:'11 Y 12', actividad:'SELLO CORTAFUEGO', area:'INTERIOR Y EXTERIOR', especialidad:'SELLO CORTAFUEGO', personal:12, dias:18, inicio:'2026-06-12', fin:'2026-07-04', horario:'NOCTURNO', material:'REQ. 10/06/26'},
+];
+
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+let sortCol = null, sortDir = 1, currentView = 'tabla';
+
+function filtered() {
+  const esp = document.getElementById('filtroEsp').value;
+  const hor = document.getElementById('filtroHor').value;
+  const bus = document.getElementById('buscar').value.toLowerCase();
+  return raw.filter(r => {
+    if (esp && r.especialidad !== esp) return false;
+    if (hor && !r.horario.toUpperCase().includes(hor)) return false;
+    if (bus && !r.actividad.toLowerCase().includes(bus) && !r.area.toLowerCase().includes(bus) && !r.colo.toLowerCase().includes(bus)) return false;
+    return true;
+  });
+}
+
+function sortBy(col, el) {
+  if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+  document.querySelectorAll('th').forEach(t => t.style.color = '');
+  el.style.color = '#1a1a18';
+  renderAll();
+}
+
+function fmtDate(d) { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; }
+
+function espBadge(e) {
+  if (e === 'HIDROSANITARIO') return '<span class="badge badge-hidro">HIDRO</span>';
+  if (e === 'HERRERIA') return '<span class="badge badge-herr">HERRERÍA</span>';
+  return '<span class="badge badge-sello">SELLO</span>';
+}
+function horBadge(h) {
+  if (!h || h === '-') return '<span style="color:#9a9a94;font-size:11px;">—</span>';
+  const u = h.trim().toUpperCase();
+  if (u.includes('NOCT')) return '<span class="badge badge-noct">NOCTURNO</span>';
+  if (u.includes('DIUR')) return '<span class="badge badge-diur">DIURNO</span>';
+  return `<span style="font-size:11px">${h}</span>`;
+}
+
+function renderTabla() {
+  let data = filtered();
+  if (sortCol) {
+    data = [...data].sort((a,b) => {
+      let av = a[sortCol], bv = b[sortCol];
+      if (typeof av === 'string') av = av.toLowerCase();
+      if (typeof bv === 'string') bv = bv.toLowerCase();
+      return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    });
+  }
+  const maxDias = Math.max(...raw.map(r => r.dias));
+  document.getElementById('tbody').innerHTML = data.map(r => `
+    <tr>
+      <td style="font-weight:600">${r.colo}</td>
+      <td>${r.actividad}</td>
+      <td style="color:#5c5c58">${r.area}</td>
+      <td>${espBadge(r.especialidad)}</td>
+      <td style="text-align:center;font-weight:600">${r.personal}</td>
+      <td>
+        <div class="bar-cell">
+          <span style="min-width:28px;font-size:12px;font-weight:500">${r.dias}d</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(r.dias/maxDias*100)}%;background:${r.especialidad==='HERRERIA'?'#EF9F27':r.especialidad==='HIDROSANITARIO'?'#378ADD':'#1D9E75'}"></div></div>
+        </div>
+      </td>
+      <td style="font-size:12px">${fmtDate(r.inicio)}</td>
+      <td style="font-size:12px">${fmtDate(r.fin)}</td>
+      <td>${horBadge(r.horario)}</td>
+      <td style="font-size:11px;color:${r.material==='-'?'#9a9a94':'#633806'};font-weight:${r.material==='-'?'400':'500'}">${r.material === '-' ? '—' : r.material}</td>
+    </tr>`).join('');
+}
+
+function renderGantt() {
+  const data = filtered();
+  const dates = data.flatMap(r => [new Date(r.inicio), new Date(r.fin)]);
+  const minD = new Date(Math.min(...dates));
+  const maxD = new Date(Math.max(...dates));
+  const totalDays = Math.max((maxD - minD) / 86400000, 1);
+  const colors = {HERRERIA:'#EF9F27', HIDROSANITARIO:'#378ADD', 'SELLO CORTAFUEGO':'#1D9E75'};
+
+  let dateHeader = '<div class="gantt-row"><div class="gantt-label"></div><div style="flex:1;display:flex;min-width:200px">';
+  const step = Math.ceil(totalDays / 6);
+  for (let i = 0; i <= totalDays; i += step) {
+    const d = new Date(minD); d.setDate(d.getDate() + i);
+    dateHeader += `<div style="flex:1;text-align:center;font-size:10px;color:#9a9a94">${d.getDate()}/${d.getMonth()+1}</div>`;
+  }
+  dateHeader += '</div></div>';
+
+  const rows = data.map(r => {
+    const start = (new Date(r.inicio) - minD) / 86400000;
+    const left = Math.round(start / totalDays * 100);
+    const width = Math.max(Math.round(r.dias / totalDays * 100), 3);
+    const color = colors[r.especialidad] || '#888';
+    return `<div class="gantt-row">
+      <div class="gantt-label" title="${r.actividad}">${r.actividad.length > 24 ? r.actividad.slice(0,24)+'…' : r.actividad}</div>
+      <div class="gantt-track">
+        <div class="gantt-bar" style="left:${left}%;width:${width}%;background:${color}">${r.dias}d</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('ganttContainer').innerHTML = dateHeader + rows;
+}
+
+function renderPivot() {
+  const data = filtered();
+  const byEsp={}, byArea={}, byColo={}, byHor={};
+  data.forEach(r => {
+    byEsp[r.especialidad] = (byEsp[r.especialidad]||0) + 1;
+    byArea[r.area.trim()] = (byArea[r.area.trim()]||0) + 1;
+    byColo[r.colo] = (byColo[r.colo]||0) + 1;
+    const h = r.horario.trim().toUpperCase().includes('NOCT') ? 'NOCTURNO' : r.horario.trim().toUpperCase().includes('DIUR') ? 'DIURNO' : 'N/D';
+    byHor[h] = (byHor[h]||0) + 1;
+  });
+  function pivotRows(obj) {
+    const maxV = Math.max(...Object.values(obj));
+    return Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v]) =>
+      `<div class="pivot-row"><span class="pivot-key">${k}</span><div class="pivot-val">
+        <div class="bar-bg" style="min-width:70px"><div class="bar-fill" style="width:${Math.round(v/maxV*100)}%;background:#378ADD"></div></div>
+        ${v}
+      </div></div>`).join('');
+  }
+  document.getElementById('pivotGrid').innerHTML = `
+    <div class="pivot-card"><p class="section-label" style="margin-bottom:12px">Por especialidad</p>${pivotRows(byEsp)}</div>
+    <div class="pivot-card"><p class="section-label" style="margin-bottom:12px">Por área</p>${pivotRows(byArea)}</div>
+    <div class="pivot-card"><p class="section-label" style="margin-bottom:12px">Por columna (COLO)</p>${pivotRows(byColo)}</div>
+    <div class="pivot-card"><p class="section-label" style="margin-bottom:12px">Por horario</p>${pivotRows(byHor)}</div>`;
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('viewTabla').style.display = v==='tabla' ? '' : 'none';
+  document.getElementById('viewGantt').style.display = v==='gantt' ? '' : 'none';
+  document.getElementById('viewPivot').style.display = v==='pivot' ? '' : 'none';
+  document.querySelectorAll('.btn-tab').forEach((b,i) => b.classList.toggle('active', ['tabla','gantt','pivot'][i]===v));
+  if (v==='gantt') renderGantt();
+  if (v==='pivot') renderPivot();
+}
+
+function renderMetrics() {
+  const totalPersonal = raw.reduce((s,r)=>s+r.personal,0);
+  const maxDias = Math.max(...raw.map(r=>r.dias));
+  const conMaterial = raw.filter(r=>r.material!=='-').length;
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric accent"><div class="m-label">Total actividades</div><div class="m-val">${raw.length}</div><div class="m-sub">en ejecución</div></div>
+    <div class="metric"><div class="m-label">Personal asignado</div><div class="m-val">${totalPersonal}</div><div class="m-sub">personas en total</div></div>
+    <div class="metric"><div class="m-label">Duración máxima</div><div class="m-val">${maxDias}d</div><div class="m-sub">sello cortafuego</div></div>
+    <div class="metric"><div class="m-label">Req. materiales</div><div class="m-val">${conMaterial}</div><div class="m-sub">actividades con alerta</div></div>`;
+}
+
+function renderAlert() {
+  const hoy = new Date();
+  const prox = raw.filter(r => { const diff = (new Date(r.fin) - hoy) / 86400000; return diff >= 0 && diff <= 5; });
+  const alertBox = document.getElementById('alertBox');
+  if (prox.length > 0) {
+    alertBox.style.display = '';
+    alertBox.innerHTML = `<div class="alert-title">⚠ Actividades que terminan en los próximos 5 días</div><div class="alert-items">${prox.map(r=>`<div>· ${r.actividad} — finaliza ${fmtDate(r.fin)} (COLO ${r.colo})</div>`).join('')}</div>`;
+  }
+}
+
+function renderAll() {
+  renderTabla();
+  if (currentView==='gantt') renderGantt();
+  if (currentView==='pivot') renderPivot();
+}
+
+renderMetrics();
+renderAlert();
+renderTabla();
+
+const byEsp={HERRERIA:0,HIDROSANITARIO:0,'SELLO CORTAFUEGO':0};
+raw.forEach(r=>{ byEsp[r.especialidad]=(byEsp[r.especialidad]||0)+r.personal; });
+const c1Colors=['#EF9F27','#378ADD','#1D9E75'];
+const c1Labels=Object.keys(byEsp);
+document.getElementById('legend1').innerHTML=c1Labels.map((l,i)=>`<span><span class="legend-sq" style="background:${c1Colors[i]}"></span>${l.replace('HIDROSANITARIO','HIDRO').replace('SELLO CORTAFUEGO','SELLO')}: ${byEsp[l]}</span>`).join('');
+new Chart(document.getElementById('c1'),{type:'bar',data:{labels:c1Labels.map(l=>l.replace('HIDROSANITARIO','HIDRO').replace('SELLO CORTAFUEGO','SELLO')),datasets:[{data:Object.values(byEsp),backgroundColor:c1Colors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+
+const byArea={};
+raw.forEach(r=>{byArea[r.area.trim()]=(byArea[r.area.trim()]||0)+1;});
+const aColors=['#378ADD','#EF9F27','#1D9E75','#D4537E','#7F77DD','#D85A30','#63992A'];
+const aLabels=Object.keys(byArea);
+document.getElementById('legend2').innerHTML=aLabels.map((l,i)=>`<span><span class="legend-sq" style="background:${aColors[i%aColors.length]}"></span>${l.length>14?l.slice(0,14)+'…':l}</span>`).join('');
+new Chart(document.getElementById('c2'),{type:'doughnut',data:{labels:aLabels,datasets:[{data:Object.values(byArea),backgroundColor:aColors,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'60%'}});
+
+const sorted3=[...raw].sort((a,b)=>b.dias-a.dias).slice(0,10);
+new Chart(document.getElementById('c3'),{type:'bar',data:{labels:sorted3.map(r=>r.actividad.length>22?r.actividad.slice(0,22)+'…':r.actividad),datasets:[{data:sorted3.map(r=>r.dias),backgroundColor:sorted3.map(r=>r.especialidad==='HERRERIA'?'#EF9F27':r.especialidad==='HIDROSANITARIO'?'#378ADD':'#1D9E75'),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+const byHor={NOCTURNO:0,DIURNO:0,'N/D':0};
+raw.forEach(r=>{const h=r.horario.trim().toUpperCase();if(h.includes('NOCT'))byHor.NOCTURNO++;else if(h.includes('DIUR'))byHor.DIURNO++;else byHor['N/D']++;});
+const hColors=['#7F77DD','#1D9E75','#9a9a94'];
+document.getElementById('legend4').innerHTML=Object.keys(byHor).map((l,i)=>`<span><span class="legend-sq" style="background:${hColors[i]}"></span>${l}: ${byHor[l]}</span>`).join('');
+new Chart(document.getElementById('c4'),{type:'doughnut',data:{labels:Object.keys(byHor),datasets:[{data:Object.values(byHor),backgroundColor:hColors,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'55%'}});
+</script>
+</body>
+</html>
